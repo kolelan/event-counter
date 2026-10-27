@@ -21,8 +21,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -97,6 +99,8 @@ private data class ConfigureState(
     val events: List<Event> = emptyList(),
     val selected: List<Long?> = emptyList(),
     val digitStyle: DigitStyle = DigitStyle.SHADOW,
+    val showTitle: Boolean = true,
+    val customTitles: List<String> = emptyList(),
     val pickingSlot: Int? = null,
 )
 
@@ -106,8 +110,15 @@ private class WidgetConfigureViewModel(
     private val refresher: WidgetRefresher,
     private val widgetId: Int,
     slotCount: Int,
+    cell: Boolean,
 ) : ViewModel() {
-    private val _state = MutableStateFlow(ConfigureState(selected = List(slotCount) { null }))
+    private val _state = MutableStateFlow(
+        ConfigureState(
+            selected = List(slotCount) { null },
+            customTitles = List(slotCount) { "" },
+            showTitle = !cell,
+        ),
+    )
     val state: StateFlow<ConfigureState> = _state.asStateFlow()
 
     init {
@@ -124,6 +135,8 @@ private class WidgetConfigureViewModel(
                     events = events,
                     selected = selected,
                     digitStyle = store.readDigitStyle(widgetId),
+                    showTitle = store.readShowTitle(widgetId, defaultVisible = it.showTitle),
+                    customTitles = store.readCustomTitles(widgetId, it.selected.size),
                 )
             }
         }
@@ -140,8 +153,12 @@ private class WidgetConfigureViewModel(
     fun choose(index: Int, eventId: Long?) {
         _state.update { state ->
             val next = state.selected.toMutableList()
+            val titles = state.customTitles.toMutableList()
+            if (index in next.indices && next[index] != eventId && index < titles.size) {
+                titles[index] = ""
+            }
             if (index in next.indices) next[index] = eventId
-            state.copy(selected = uniqueSlotIds(next), pickingSlot = null)
+            state.copy(selected = uniqueSlotIds(next), customTitles = titles, pickingSlot = null)
         }
     }
 
@@ -149,10 +166,23 @@ private class WidgetConfigureViewModel(
         _state.update { it.copy(digitStyle = style) }
     }
 
+    fun setShowTitle(show: Boolean) {
+        _state.update { it.copy(showTitle = show) }
+    }
+
+    fun setCustomTitle(index: Int, value: String) {
+        _state.update { state ->
+            val titles = state.customTitles.toMutableList()
+            if (index in titles.indices) titles[index] = value
+            state.copy(customTitles = titles)
+        }
+    }
+
     fun save(onDone: () -> Unit) {
         val snapshot = _state.value
         store.write(widgetId, snapshot.selected.size, uniqueSlotIds(snapshot.selected))
         store.writeDigitStyle(widgetId, snapshot.digitStyle)
+        store.writeTitles(widgetId, snapshot.showTitle, snapshot.customTitles)
         viewModelScope.launch {
             runCatching { refresher.refresh() }
             onDone()
@@ -164,16 +194,18 @@ private class WidgetConfigureViewModel(
             container: com.eventcounter.di.AppContainer,
             widgetId: Int,
             slotCount: Int,
+            cell: Boolean,
         ) = viewModelFactory {
             WidgetConfigureViewModel(
                 repository = container.repository,
                 store = container.widgetStore,
                 refresher = container.widgetRefresher,
-                widgetId = widgetId,
-                slotCount = slotCount,
-            )
-        }
+            widgetId = widgetId,
+            slotCount = slotCount,
+            cell = cell,
+        )
     }
+}
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -187,7 +219,7 @@ private fun WidgetConfigureScreen(
 ) {
     val container = LocalAppContainer.current
     val viewModel: WidgetConfigureViewModel = viewModel(
-        factory = WidgetConfigureViewModel.factory(container, widgetId, slotCount),
+        factory = WidgetConfigureViewModel.factory(container, widgetId, slotCount, cell),
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
 
@@ -262,6 +294,38 @@ private fun WidgetConfigureScreen(
                             title = "Полупрозрачная подложка",
                             selected = state.digitStyle == DigitStyle.PLATE,
                             onClick = { viewModel.setDigitStyle(DigitStyle.PLATE) },
+                        )
+                    }
+                }
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = if (slotCount == 1) "Показывать название" else "Показывать названия",
+                            style = MaterialTheme.typography.titleSmall,
+                        )
+                        Switch(
+                            checked = state.showTitle,
+                            onCheckedChange = viewModel::setShowTitle,
+                        )
+                    }
+                }
+                if (state.showTitle) {
+                    items(state.selected.size) { index ->
+                        val eventTitle = state.events.firstOrNull { it.id == state.selected[index] }?.title.orEmpty()
+                        OutlinedTextField(
+                            value = state.customTitles.getOrNull(index).orEmpty(),
+                            onValueChange = { viewModel.setCustomTitle(index, it) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            enabled = state.selected[index] != null,
+                            label = {
+                                Text(if (slotCount == 1) "Название на виджете" else "Название ${index + 1}")
+                            },
+                            placeholder = { Text(eventTitle.ifBlank { "Как у события" }) },
                         )
                     }
                 }

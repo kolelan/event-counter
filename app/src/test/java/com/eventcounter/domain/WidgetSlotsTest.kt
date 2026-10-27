@@ -72,6 +72,22 @@ class WidgetSlotsTest {
     }
 
     @Test
+    fun displayTitle_canReplaceOrHideEventName() {
+        assertEquals("", widgetDisplayTitle("Масло", "", showTitle = false))
+        assertEquals("Масло", widgetDisplayTitle("Масло", "  ", showTitle = true))
+        assertEquals("Замена", widgetDisplayTitle("Масло", " Замена ", showTitle = true))
+        val slot = buildWidgetSlots(
+            eventIds = listOf(7L),
+            events = listOf(event(id = 7, title = "Масло")),
+            now = start,
+            zone = zone,
+            showTitle = true,
+            customTitles = listOf("Замена"),
+        ).single()
+        assertEquals("Замена", slot.title)
+    }
+
+    @Test
     fun archivedMissingAndEmpty_askToChoose() {
         val archived = event(id = 3, title = "Масло", archivedAt = Instant.parse("2026-02-01T00:00:00Z"))
         val slots = buildWidgetSlots(

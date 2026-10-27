@@ -44,11 +44,31 @@ class WidgetStore(context: Context) {
         prefs.edit().putString(styleKey(widgetId), style.name).apply()
     }
 
+    fun readShowTitle(widgetId: Int, defaultVisible: Boolean): Boolean {
+        if (!prefs.contains(showTitleKey(widgetId))) return defaultVisible
+        return prefs.getBoolean(showTitleKey(widgetId), defaultVisible)
+    }
+
+    fun readCustomTitles(widgetId: Int, slotCount: Int): List<String> {
+        val raw = prefs.getString(titlesKey(widgetId), null) ?: return List(slotCount) { "" }
+        val parts = raw.split(TITLE_SEPARATOR)
+        return List(slotCount) { index -> parts.getOrNull(index).orEmpty() }
+    }
+
+    fun writeTitles(widgetId: Int, showTitle: Boolean, titles: List<String>) {
+        prefs.edit()
+            .putBoolean(showTitleKey(widgetId), showTitle)
+            .putString(titlesKey(widgetId), titles.joinToString(TITLE_SEPARATOR))
+            .apply()
+    }
+
     fun delete(widgetId: Int) {
         prefs.edit()
             .remove(countKey(widgetId))
             .remove(slotsKey(widgetId))
             .remove(styleKey(widgetId))
+            .remove(showTitleKey(widgetId))
+            .remove(titlesKey(widgetId))
             .apply()
     }
 
@@ -63,7 +83,12 @@ class WidgetStore(context: Context) {
 
     private fun styleKey(widgetId: Int) = "style_$widgetId"
 
+    private fun showTitleKey(widgetId: Int) = "show_title_$widgetId"
+
+    private fun titlesKey(widgetId: Int) = "titles_$widgetId"
+
     private companion object {
         const val FILE = "widget-slots"
+        const val TITLE_SEPARATOR = "\u001f"
     }
 }

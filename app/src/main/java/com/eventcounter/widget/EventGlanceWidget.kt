@@ -52,8 +52,11 @@ class EventGlanceWidget : GlanceAppWidget() {
         val widgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
         val provider = AppWidgetManager.getInstance(context).getAppWidgetInfo(widgetId)?.provider?.className
         val cell = isOneCell(provider)
-        val selection = WidgetStore(context).read(widgetId)
-        val digitStyle = WidgetStore(context).readDigitStyle(widgetId)
+        val store = WidgetStore(context)
+        val selection = store.read(widgetId)
+        val digitStyle = store.readDigitStyle(widgetId)
+        val showTitle = store.readShowTitle(widgetId, defaultVisible = !cell)
+        val customTitles = store.readCustomTitles(widgetId, selection.eventIds.size)
         val container = (context.applicationContext as EventCounterApp).container
         val events = container.repository.getEvents(selection.eventIds.filterNotNull())
         val slots = buildWidgetSlots(
@@ -62,6 +65,8 @@ class EventGlanceWidget : GlanceAppWidget() {
             now = Instant.now(),
             zone = ZoneId.systemDefault(),
             counterUnit = if (cell) CounterUnit.DAYS else null,
+            showTitle = showTitle,
+            customTitles = customTitles,
         )
         provideContent {
             GlanceTheme {
@@ -120,16 +125,20 @@ private fun SlotRow(context: Context, widgetId: Int, slot: WidgetSlot) {
             colorFilter = ColorFilter.tint(color),
         )
         Spacer(GlanceModifier.width(8.dp))
-        Text(
-            text = slot.title,
-            modifier = GlanceModifier.defaultWeight(),
-            maxLines = 1,
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
-            ),
-        )
+        if (slot.title.isNotBlank()) {
+            Text(
+                text = slot.title,
+                modifier = GlanceModifier.defaultWeight(),
+                maxLines = 1,
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurface,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                ),
+            )
+        } else {
+            Spacer(GlanceModifier.defaultWeight())
+        }
         if (slot.counterText.isNotBlank()) {
             Spacer(GlanceModifier.width(8.dp))
             Text(
@@ -150,9 +159,9 @@ private fun OneCell(context: Context, widgetId: Int, slot: WidgetSlot, digitStyl
     val color = slotColor(slot.status)
     val icon = remember(slot.iconKey) { AppIcons.byKey(slot.iconKey).image.raster(sizePx = 288) }
     val label = cellCounterLabel(slot.counterText)
-    val number = remember(label, slot.status, digitStyle) {
+    val number = remember(label, slot.title, slot.status, digitStyle) {
         if (slot.opensEvent && label.isNotBlank()) {
-            cellCounterBitmap(label, slot.status, digitStyle)
+            cellCounterBitmap(label, slot.status, digitStyle, title = slot.title)
         } else {
             null
         }
