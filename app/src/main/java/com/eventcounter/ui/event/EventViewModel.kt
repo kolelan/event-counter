@@ -16,6 +16,7 @@ import com.eventcounter.domain.IconKeys
 import com.eventcounter.domain.StatusCalculator
 import com.eventcounter.domain.ThresholdUnit
 import com.eventcounter.domain.parseThreshold
+import com.eventcounter.widget.WidgetRefresher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.isActive
@@ -83,6 +84,7 @@ data class EventFormState(
 class EventViewModel(
     private val repository: EventRepository,
     private val imageStore: ImageStore,
+    private val widgetRefresher: WidgetRefresher,
     private val eventId: Long?,
     private val parentId: Long?,
 ) : ViewModel() {
@@ -198,6 +200,7 @@ class EventViewModel(
                 removed.forEach(imageStore::delete)
                 markSaved()
                 _state.update { it.copy(busy = false, id = id) }
+                runCatching { widgetRefresher.refresh() }
                 onSaved()
             } catch (cancel: CancellationException) {
                 throw cancel
@@ -212,6 +215,7 @@ class EventViewModel(
         if (id == 0L || _state.value.busy) return
         viewModelScope.launch {
             repository.setArchived(id, archived = true)
+            runCatching { widgetRefresher.refresh() }
             onDone()
         }
     }
@@ -221,6 +225,7 @@ class EventViewModel(
         if (id == 0L || _state.value.busy) return
         viewModelScope.launch {
             repository.setArchived(id, archived = false)
+            runCatching { widgetRefresher.refresh() }
             onDone()
         }
     }
@@ -231,6 +236,7 @@ class EventViewModel(
         viewModelScope.launch {
             _state.update { it.copy(busy = true) }
             repository.deleteEvent(id)
+            runCatching { widgetRefresher.refresh() }
             onDeleted()
         }
     }
@@ -328,7 +334,13 @@ class EventViewModel(
 
     companion object {
         fun factory(container: AppContainer, eventId: Long?, parentId: Long?) = viewModelFactory {
-            EventViewModel(container.repository, container.imageStore, eventId, parentId)
+            EventViewModel(
+                container.repository,
+                container.imageStore,
+                container.widgetRefresher,
+                eventId,
+                parentId,
+            )
         }
     }
 }

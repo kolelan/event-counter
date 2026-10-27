@@ -8,6 +8,9 @@ import com.eventcounter.data.EventRepository
 import com.eventcounter.data.local.EventDatabase
 import com.eventcounter.data.local.ImageStore
 import com.eventcounter.data.prefs.SettingsRepository
+import com.eventcounter.widget.GlanceWidgetRefresher
+import com.eventcounter.widget.WidgetRefresher
+import com.eventcounter.widget.WidgetStore
 
 class AppContainer(context: Context) {
     private val appContext = context.applicationContext
@@ -17,6 +20,8 @@ class AppContainer(context: Context) {
         imageStore = imageStore,
     )
     val settingsRepository: SettingsRepository = SettingsRepository(appContext)
+    val widgetStore: WidgetStore = WidgetStore(appContext)
+    val widgetRefresher: WidgetRefresher = GlanceWidgetRefresher(appContext)
 }
 
 fun <VM : ViewModel> viewModelFactory(create: () -> VM): ViewModelProvider.Factory {

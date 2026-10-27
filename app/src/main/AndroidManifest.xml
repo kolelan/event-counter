@@ -13,12 +13,54 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name=".ui.widget.WidgetConfigureActivity"
+            android:exported="true"
+            android:theme="@style/Theme.EventCounter">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+        <receiver
+            android:name=".widget.OneEventWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_one">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_one" />
+        </receiver>
+        <receiver
+            android:name=".widget.ThreeEventWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_three">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_three" />
+        </receiver>
+        <receiver
+            android:name=".widget.FiveEventWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_five">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_five" />
+        </receiver>
     </application>
 
 </manifest>

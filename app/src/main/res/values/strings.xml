@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Счётчик событий</string>
+    <string name="widget_one">1 событие</string>
+    <string name="widget_three">3 события</string>
+    <string name="widget_five">5 событий</string>
+    <string name="widget_description">Иконка, название и счётчик выбранных событий</string>
 </resources>

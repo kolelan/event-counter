@@ -47,6 +47,15 @@ interface EventDao {
     @Query("SELECT * FROM events WHERE id = :id")
     suspend fun getEvent(id: Long): EventEntity?
 
+    @Query("SELECT * FROM events WHERE id IN (:ids)")
+    suspend fun getEventsByIds(ids: List<Long>): List<EventEntity>
+
+    @Query(
+        "SELECT * FROM events WHERE archivedAtEpochMillis IS NULL " +
+            "ORDER BY title COLLATE NOCASE ASC, occurredAtEpochMillis DESC",
+    )
+    suspend fun getActiveEvents(): List<EventEntity>
+
     @Query("SELECT * FROM event_images WHERE eventId = :eventId ORDER BY sortOrder ASC")
     suspend fun getImages(eventId: Long): List<EventImageEntity>
 

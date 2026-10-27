@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.eventcounter.di.AppContainer
 import com.eventcounter.di.viewModelFactory
+import com.eventcounter.widget.WidgetRefresher
 import com.eventcounter.domain.CounterValue
 import com.eventcounter.domain.EventStatus
 import com.eventcounter.domain.FolderSnapshot
@@ -59,6 +60,7 @@ sealed interface HomeUiState {
 class HomeViewModel(
     private val repository: com.eventcounter.data.EventRepository,
     private val settingsRepository: com.eventcounter.data.prefs.SettingsRepository,
+    private val widgetRefresher: WidgetRefresher,
     private val parentId: Long?,
 ) : ViewModel() {
     private val zoneId = ZoneId.systemDefault()
@@ -80,6 +82,7 @@ class HomeViewModel(
     fun archive(eventId: Long) {
         viewModelScope.launch {
             repository.setArchived(eventId, archived = true)
+            runCatching { widgetRefresher.refresh() }
         }
     }
 
@@ -126,7 +129,12 @@ class HomeViewModel(
 
     companion object {
         fun factory(container: AppContainer, parentId: Long?) = viewModelFactory {
-            HomeViewModel(container.repository, container.settingsRepository, parentId)
+            HomeViewModel(
+                container.repository,
+                container.settingsRepository,
+                container.widgetRefresher,
+                parentId,
+            )
         }
     }
 }

@@ -55,6 +55,13 @@ class EventRepository(
 
     suspend fun getAllGroups(): List<Group> = dao.getAllGroups().map { it.toDomain() }
 
+    suspend fun getActiveEvents(): List<Event> = dao.getActiveEvents().map { it.toDomain() }
+
+    suspend fun getEvents(ids: Collection<Long>): List<Event> {
+        if (ids.isEmpty()) return emptyList()
+        return dao.getEventsByIds(ids.toList()).map { it.toDomain() }
+    }
+
     suspend fun getEventDetails(id: Long): EventDetails? {
         val event = dao.getEvent(id)?.toDomain() ?: return null
         val images = dao.getImages(id).map { it.toDomain() }

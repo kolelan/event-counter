@@ -2,6 +2,7 @@ package com.eventcounter.ui.navigation
 
 import android.os.Bundle
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -30,7 +31,18 @@ private object Routes {
 }
 
 @Composable
-fun AppNavHost(navController: NavHostController = rememberNavController()) {
+fun AppNavHost(
+    navController: NavHostController = rememberNavController(),
+    openEventId: Long? = null,
+    openEventToken: Int = 0,
+) {
+    LaunchedEffect(openEventToken) {
+        val eventId = openEventId ?: return@LaunchedEffect
+        if (openEventToken == 0) return@LaunchedEffect
+        navController.navigate(Routes.event(eventId = eventId)) {
+            launchSingleTop = true
+        }
+    }
     NavHost(navController = navController, startDestination = Routes.HOME) {
         composable(Routes.HOME) {
             HomeRoute(parentId = null, navController = navController)
