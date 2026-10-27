@@ -40,6 +40,7 @@ fun EventEntity.toDomain(): Event = Event(
     counterDirection = CounterDirection.valueOf(counterDirection),
     counterUnit = CounterUnit.valueOf(counterUnit),
     sortOrder = sortOrder,
+    archivedAt = archivedAtEpochMillis?.let(Instant::ofEpochMilli),
 )
 
 fun Event.toEntity(): EventEntity = EventEntity(
@@ -59,6 +60,7 @@ fun Event.toEntity(): EventEntity = EventEntity(
     counterDirection = counterDirection.name,
     counterUnit = counterUnit.name,
     sortOrder = sortOrder,
+    archivedAtEpochMillis = archivedAt?.toEpochMilli(),
 )
 
 fun EventImageEntity.toDomain(): EventImage = EventImage(

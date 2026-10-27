@@ -77,6 +77,12 @@ class HomeViewModel(
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HomeUiState.Loading)
 
+    fun archive(eventId: Long) {
+        viewModelScope.launch {
+            repository.setArchived(eventId, archived = true)
+        }
+    }
+
     fun toggleViewMode() {
         val current = (uiState.value as? HomeUiState.Ready)?.viewMode ?: return
         viewModelScope.launch {

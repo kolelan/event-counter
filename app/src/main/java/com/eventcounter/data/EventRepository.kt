@@ -11,6 +11,7 @@ import com.eventcounter.domain.EventDetails
 import com.eventcounter.domain.FolderSnapshot
 import com.eventcounter.domain.Group
 import kotlinx.coroutines.flow.Flow
+import java.time.Instant
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
@@ -40,6 +41,17 @@ class EventRepository(
     }
 
     fun observeGroup(id: Long): Flow<Group?> = dao.observeGroup(id).map { it?.toDomain() }
+
+    fun observeArchived(): Flow<List<Event>> =
+        dao.observeArchivedEvents().map { rows -> rows.map { it.toDomain() } }
+
+    fun observeAllGroups(): Flow<List<Group>> =
+        dao.observeAllGroups().map { rows -> rows.map { it.toDomain() } }
+
+    suspend fun setArchived(id: Long, archived: Boolean) {
+        val stamp = if (archived) Instant.now().toEpochMilli() else null
+        dao.setArchivedAt(id, stamp)
+    }
 
     suspend fun getAllGroups(): List<Group> = dao.getAllGroups().map { it.toDomain() }
 

@@ -54,6 +54,7 @@ data class EventEntity(
     val counterDirection: String,
     val counterUnit: String,
     val sortOrder: Int,
+    val archivedAtEpochMillis: Long? = null,
 )
 
 @Entity(

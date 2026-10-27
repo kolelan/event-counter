@@ -57,6 +57,7 @@ data class EventFormState(
     val counterUnit: CounterUnit = CounterUnit.DAYS,
     val groupId: Long? = null,
     val sortOrder: Int = 0,
+    val archivedAt: Instant? = null,
     val images: List<ImageDraft> = emptyList(),
     val groups: List<Group> = emptyList(),
 ) {
@@ -75,6 +76,7 @@ data class EventFormState(
         counterDirection = counterDirection,
         counterUnit = counterUnit,
         sortOrder = sortOrder,
+        archivedAt = archivedAt,
     )
 }
 
@@ -205,6 +207,24 @@ class EventViewModel(
         }
     }
 
+    fun archive(onDone: () -> Unit) {
+        val id = _state.value.id
+        if (id == 0L || _state.value.busy) return
+        viewModelScope.launch {
+            repository.setArchived(id, archived = true)
+            onDone()
+        }
+    }
+
+    fun restore(onDone: () -> Unit) {
+        val id = _state.value.id
+        if (id == 0L || _state.value.busy) return
+        viewModelScope.launch {
+            repository.setArchived(id, archived = false)
+            onDone()
+        }
+    }
+
     fun delete(onDeleted: () -> Unit) {
         val id = _state.value.id
         if (id == 0L || _state.value.busy) return
@@ -272,6 +292,7 @@ class EventViewModel(
         counterDirection = counterDirection,
         counterUnit = counterUnit,
         sortOrder = sortOrder,
+        archivedAt = archivedAt,
     )
 
     private fun EventDetails.toForm(groups: List<Group>): EventFormState {
@@ -295,6 +316,7 @@ class EventViewModel(
             counterUnit = event.counterUnit,
             groupId = event.groupId,
             sortOrder = event.sortOrder,
+            archivedAt = event.archivedAt,
             images = images.map { ImageDraft(it.path, persisted = true) },
             groups = groups,
         )

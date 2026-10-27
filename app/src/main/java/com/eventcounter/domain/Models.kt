@@ -68,6 +68,7 @@ data class Event(
     val counterDirection: CounterDirection = CounterDirection.ELAPSED,
     val counterUnit: CounterUnit = CounterUnit.DAYS,
     val sortOrder: Int = 0,
+    val archivedAt: Instant? = null,
 )
 
 data class EventImage(

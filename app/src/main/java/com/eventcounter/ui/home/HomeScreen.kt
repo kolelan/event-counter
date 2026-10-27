@@ -26,6 +26,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Event
 import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material.icons.outlined.GridView
+import androidx.compose.material.icons.outlined.Archive
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
@@ -67,6 +68,7 @@ fun HomeScreen(
     onOpenEvent: (Long) -> Unit,
     onCreateEvent: () -> Unit,
     onCreateGroup: () -> Unit,
+    onOpenArchive: () -> Unit,
     onSettings: () -> Unit,
 ) {
     val container = LocalAppContainer.current
@@ -98,6 +100,9 @@ fun HomeScreen(
                                 contentDescription = if (grid) "Список" else "Плитка",
                             )
                         }
+                    }
+                    IconButton(onClick = onOpenArchive) {
+                        Icon(Icons.Outlined.Archive, contentDescription = "Архив")
                     }
                     IconButton(onClick = onSettings) {
                         Icon(Icons.Outlined.Settings, contentDescription = "Настройки")
@@ -162,7 +167,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     gridItems(ready.items, key = { it.key }) { item ->
-                        BrowserTile(item, onOpenGroup, onOpenEvent)
+                        BrowserTile(item, onOpenGroup, onOpenEvent, viewModel::archive)
                     }
                 }
             }
@@ -173,7 +178,7 @@ fun HomeScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     items(ready.items, key = { it.key }) { item ->
-                        BrowserRow(item, onOpenGroup, onOpenEvent)
+                        BrowserRow(item, onOpenGroup, onOpenEvent, viewModel::archive)
                     }
                 }
             }
@@ -196,6 +201,7 @@ private fun BrowserRow(
     item: BrowserItem,
     onOpenGroup: (Long) -> Unit,
     onOpenEvent: (Long) -> Unit,
+    onArchive: (Long) -> Unit,
 ) {
     when (item) {
         is BrowserItem.GroupRow -> {
@@ -255,6 +261,9 @@ private fun BrowserRow(
                     }
                 }
                 CounterLabel(counter = item.counter, status = item.status)
+                IconButton(onClick = { onArchive(item.id) }) {
+                    Icon(Icons.Outlined.Archive, contentDescription = "В архив")
+                }
             }
         }
     }
@@ -265,6 +274,7 @@ private fun BrowserTile(
     item: BrowserItem,
     onOpenGroup: (Long) -> Unit,
     onOpenEvent: (Long) -> Unit,
+    onArchive: (Long) -> Unit,
 ) {
     when (item) {
         is BrowserItem.GroupRow -> {
@@ -290,28 +300,37 @@ private fun BrowserTile(
         }
 
         is BrowserItem.EventRow -> {
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 132.dp)
                     .clip(RoundedCornerShape(16.dp))
                     .background(eventContainerColor(item.status))
-                    .clickable { onOpenEvent(item.id) }
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .clickable { onOpenEvent(item.id) },
             ) {
-                AppIconGlyph(
-                    iconKey = item.iconKey,
-                    tint = statusColor(item.status),
-                    modifier = Modifier.size(32.dp),
-                )
-                Text(
-                    text = item.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                CounterLabel(counter = item.counter, status = item.status)
+                Column(
+                    modifier = Modifier.padding(12.dp).padding(end = 28.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    AppIconGlyph(
+                        iconKey = item.iconKey,
+                        tint = statusColor(item.status),
+                        modifier = Modifier.size(32.dp),
+                    )
+                    Text(
+                        text = item.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    CounterLabel(counter = item.counter, status = item.status)
+                }
+                IconButton(
+                    onClick = { onArchive(item.id) },
+                    modifier = Modifier.align(Alignment.TopEnd),
+                ) {
+                    Icon(Icons.Outlined.Archive, contentDescription = "В архив")
+                }
             }
         }
     }

@@ -142,6 +142,8 @@ fun EventEditorScreen(
                         picker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                     },
                     onRemoveImage = viewModel::removeImage,
+                    onArchive = { viewModel.archive(onDone) },
+                    onRestore = { viewModel.restore(onDone) },
                     onAskDelete = { confirmDelete = true },
                 )
             }
@@ -173,6 +175,8 @@ private fun EventForm(
     onApplyTag: (String) -> Unit,
     onPickImages: () -> Unit,
     onRemoveImage: (String) -> Unit,
+    onArchive: () -> Unit,
+    onRestore: () -> Unit,
     onAskDelete: () -> Unit,
 ) {
     val zone = remember { ZoneId.systemDefault() }
@@ -396,6 +400,11 @@ private fun EventForm(
         }
 
         if (state.id != 0L) {
+            if (state.archivedAt == null) {
+                TextButton(onClick = onArchive) { Text("В архив") }
+            } else {
+                TextButton(onClick = onRestore) { Text("Вернуть из архива") }
+            }
             TextButton(onClick = onAskDelete) { Text("Удалить событие") }
         }
     }

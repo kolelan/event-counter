@@ -8,6 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.eventcounter.ui.archive.ArchiveScreen
 import com.eventcounter.ui.event.EventEditorScreen
 import com.eventcounter.ui.group.GroupEditorScreen
 import com.eventcounter.ui.home.HomeScreen
@@ -16,6 +17,7 @@ import com.eventcounter.ui.settings.SettingsScreen
 private object Routes {
     const val HOME = "home"
     const val FOLDER = "folder/{groupId}"
+    const val ARCHIVE = "archive"
     const val SETTINGS = "settings"
     const val EVENT = "event?eventId={eventId}&parentId={parentId}"
     const val GROUP = "group?groupId={groupId}&parentId={parentId}"
@@ -80,6 +82,12 @@ fun AppNavHost(navController: NavHostController = rememberNavController()) {
                 onDone = { navController.popBackStack() },
             )
         }
+        composable(Routes.ARCHIVE) {
+            ArchiveScreen(
+                onBack = { navController.popBackStack() },
+                onOpenEvent = { navController.navigate(Routes.event(eventId = it)) },
+            )
+        }
         composable(Routes.SETTINGS) {
             SettingsScreen(onBack = { navController.popBackStack() })
         }
@@ -95,6 +103,7 @@ private fun HomeRoute(parentId: Long?, navController: NavHostController) {
         onOpenEvent = { navController.navigate(Routes.event(eventId = it)) },
         onCreateEvent = { navController.navigate(Routes.event(parentId = parentId ?: -1L)) },
         onCreateGroup = { navController.navigate(Routes.group(parentId = parentId ?: -1L)) },
+        onOpenArchive = { navController.navigate(Routes.ARCHIVE) { launchSingleTop = true } },
         onSettings = { navController.navigate(Routes.SETTINGS) { launchSingleTop = true } },
     )
 }

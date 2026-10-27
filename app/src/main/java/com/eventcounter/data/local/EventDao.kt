@@ -14,11 +14,26 @@ interface EventDao {
     @Query("SELECT * FROM groups WHERE parentGroupId = :parentId ORDER BY sortOrder ASC, name ASC")
     fun observeChildGroups(parentId: Long): Flow<List<GroupEntity>>
 
-    @Query("SELECT * FROM events WHERE groupId IS NULL ORDER BY sortOrder ASC, title ASC")
+    @Query(
+        "SELECT * FROM events WHERE groupId IS NULL AND archivedAtEpochMillis IS NULL " +
+            "ORDER BY sortOrder ASC, title ASC",
+    )
     fun observeRootEvents(): Flow<List<EventEntity>>
 
-    @Query("SELECT * FROM events WHERE groupId = :groupId ORDER BY sortOrder ASC, title ASC")
+    @Query(
+        "SELECT * FROM events WHERE groupId = :groupId AND archivedAtEpochMillis IS NULL " +
+            "ORDER BY sortOrder ASC, title ASC",
+    )
     fun observeChildEvents(groupId: Long): Flow<List<EventEntity>>
+
+    @Query("SELECT * FROM events WHERE archivedAtEpochMillis IS NOT NULL ORDER BY occurredAtEpochMillis DESC")
+    fun observeArchivedEvents(): Flow<List<EventEntity>>
+
+    @Query("SELECT * FROM groups ORDER BY sortOrder ASC, name ASC")
+    fun observeAllGroups(): Flow<List<GroupEntity>>
+
+    @Query("UPDATE events SET archivedAtEpochMillis = :archivedAt WHERE id = :id")
+    suspend fun setArchivedAt(id: Long, archivedAt: Long?)
 
     @Query("SELECT * FROM groups WHERE id = :id")
     fun observeGroup(id: Long): Flow<GroupEntity?>
