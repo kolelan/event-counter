@@ -1,5 +1,6 @@
 package com.eventcounter.ui.components
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -11,17 +12,28 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
+import com.eventcounter.di.LocalAppContainer
 import com.eventcounter.domain.CounterDirection
 import com.eventcounter.domain.CounterUnit
 import com.eventcounter.domain.CounterValue
 import com.eventcounter.domain.EventStatus
+import com.eventcounter.domain.IconKeys
+import com.eventcounter.domain.IconifyKeys
 import com.eventcounter.domain.ThresholdUnit
 import com.eventcounter.ui.icons.AppIcons
+import com.eventcounter.ui.icons.toIconBitmap
 
 @Composable
 fun statusColor(status: EventStatus): Color {
@@ -73,13 +85,38 @@ fun AppIconGlyph(
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.primary,
 ) {
-    val icon = AppIcons.byKey(iconKey)
-    Icon(
-        imageVector = icon.image,
-        contentDescription = icon.label,
-        modifier = modifier,
-        tint = tint,
-    )
+    if (IconifyKeys.parse(iconKey) == null) {
+        val icon = AppIcons.byKey(iconKey)
+        Icon(
+            imageVector = icon.image,
+            contentDescription = icon.label,
+            modifier = modifier,
+            tint = tint,
+        )
+        return
+    }
+    val iconify = LocalAppContainer.current.iconify
+    var svg by remember(iconKey) { mutableStateOf(iconify.cached(iconKey)) }
+    LaunchedEffect(iconKey) {
+        if (svg == null) svg = iconify.ensure(iconKey)
+    }
+    val bitmap = remember(svg) { svg?.toIconBitmap(128) }
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap.asImageBitmap(),
+            contentDescription = IconifyKeys.parse(iconKey)?.name,
+            modifier = modifier,
+            colorFilter = ColorFilter.tint(tint),
+        )
+    } else {
+        val fallback = AppIcons.byKey(IconKeys.EVENT)
+        Icon(
+            imageVector = fallback.image,
+            contentDescription = fallback.label,
+            modifier = modifier,
+            tint = tint,
+        )
+    }
 }
 
 @Composable

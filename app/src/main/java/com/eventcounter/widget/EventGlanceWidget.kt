@@ -2,6 +2,7 @@ package com.eventcounter.widget
 
 import android.appwidget.AppWidgetManager
 import android.content.Context
+import android.graphics.Bitmap
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -40,10 +41,12 @@ import androidx.glance.action.clickable
 import com.eventcounter.EventCounterApp
 import com.eventcounter.domain.CounterUnit
 import com.eventcounter.domain.EventStatus
+import com.eventcounter.domain.IconifyKeys
 import com.eventcounter.domain.WidgetSlot
 import com.eventcounter.domain.buildWidgetSlots
 import com.eventcounter.domain.cellCounterLabel
 import com.eventcounter.ui.icons.AppIcons
+import com.eventcounter.ui.icons.toIconBitmap
 import java.time.Instant
 import java.time.ZoneId
 
@@ -68,6 +71,11 @@ class EventGlanceWidget : GlanceAppWidget() {
             showTitle = showTitle,
             customTitles = customTitles,
         )
+        for (key in slots.map { it.iconKey }.distinct()) {
+            if (IconifyKeys.parse(key) != null) {
+                runCatching { container.iconify.ensure(key) }
+            }
+        }
         provideContent {
             GlanceTheme {
                 if (cell) {
@@ -101,7 +109,7 @@ class EventGlanceWidget : GlanceAppWidget() {
 @androidx.compose.runtime.Composable
 private fun SlotRow(context: Context, widgetId: Int, slot: WidgetSlot) {
     val color = slotColor(slot.status)
-    val icon = remember(slot.iconKey) { AppIcons.byKey(slot.iconKey).image.raster() }
+    val icon = remember(slot.iconKey) { context.iconBitmap(slot.iconKey, 96) }
     val action = slotAction(context, widgetId, slot)
     Row(
         modifier = GlanceModifier
@@ -120,7 +128,7 @@ private fun SlotRow(context: Context, widgetId: Int, slot: WidgetSlot) {
         Spacer(GlanceModifier.width(8.dp))
         Image(
             provider = ImageProvider(icon),
-            contentDescription = AppIcons.byKey(slot.iconKey).label,
+            contentDescription = iconLabel(slot.iconKey),
             modifier = GlanceModifier.size(20.dp),
             colorFilter = ColorFilter.tint(color),
         )
@@ -157,7 +165,7 @@ private fun SlotRow(context: Context, widgetId: Int, slot: WidgetSlot) {
 @androidx.compose.runtime.Composable
 private fun OneCell(context: Context, widgetId: Int, slot: WidgetSlot, digitStyle: DigitStyle) {
     val color = slotColor(slot.status)
-    val icon = remember(slot.iconKey) { AppIcons.byKey(slot.iconKey).image.raster(sizePx = 288) }
+    val icon = remember(slot.iconKey) { context.iconBitmap(slot.iconKey, 288) }
     val label = cellCounterLabel(slot.counterText)
     val number = remember(label, slot.title, slot.status, digitStyle) {
         if (slot.opensEvent && label.isNotBlank()) {
@@ -176,7 +184,7 @@ private fun OneCell(context: Context, widgetId: Int, slot: WidgetSlot, digitStyl
     ) {
         Image(
             provider = ImageProvider(icon),
-            contentDescription = AppIcons.byKey(slot.iconKey).label,
+            contentDescription = iconLabel(slot.iconKey),
             modifier = GlanceModifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
             colorFilter = ColorFilter.tint(color),
@@ -263,3 +271,11 @@ private fun deleteSlots(context: Context, appWidgetIds: IntArray) {
     val store = WidgetStore(context)
     appWidgetIds.forEach(store::delete)
 }
+
+private fun Context.iconBitmap(iconKey: String, sizePx: Int): Bitmap {
+    val svg = (applicationContext as EventCounterApp).container.iconify.cached(iconKey)
+    return svg?.toIconBitmap(sizePx) ?: AppIcons.byKey(iconKey).image.raster(sizePx)
+}
+
+private fun iconLabel(iconKey: String): String =
+    IconifyKeys.parse(iconKey)?.name ?: AppIcons.byKey(iconKey).label

@@ -24,8 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.eventcounter.di.LocalAppContainer
 import com.eventcounter.domain.GroupChoice
 import com.eventcounter.ui.icons.AppIcons
+import com.eventcounter.ui.icons.IconifySearch
 
 @Composable
 fun IconPicker(
@@ -33,26 +35,32 @@ fun IconPicker(
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    LazyRow(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        items(AppIcons.all, key = { it.key }) { icon ->
-            val selected = icon.key == selectedKey
-            Surface(
-                onClick = { onSelect(icon.key) },
-                shape = CircleShape,
-                color = if (selected) {
-                    MaterialTheme.colorScheme.primaryContainer
-                } else {
-                    MaterialTheme.colorScheme.surfaceVariant
-                },
-            ) {
-                Icon(
-                    imageVector = icon.image,
-                    contentDescription = icon.label,
-                    modifier = Modifier.padding(12.dp),
-                )
+    val iconify = LocalAppContainer.current.iconify
+    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        IconifySearch(repository = iconify, selectedKey = selectedKey, onSelect = onSelect)
+        Text(
+            "На устройстве",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            items(AppIcons.all, key = { it.key }) { icon ->
+                val selected = icon.key == selectedKey
+                Surface(
+                    onClick = { onSelect(icon.key) },
+                    shape = CircleShape,
+                    color = if (selected) {
+                        MaterialTheme.colorScheme.primaryContainer
+                    } else {
+                        MaterialTheme.colorScheme.surfaceVariant
+                    },
+                ) {
+                    Icon(
+                        imageVector = icon.image,
+                        contentDescription = icon.label,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                }
             }
         }
     }

@@ -12,8 +12,8 @@ android {
         applicationId = "com.eventcounter"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "0.3.3"
+        versionCode = 8
+        versionName = "0.4.1"
     }
 
     buildTypes {
@@ -52,6 +52,8 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.coil.compose)
     implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidsvg)
+    implementation(libs.gson)
     debugImplementation(libs.androidx.ui.tooling)
     testImplementation(libs.junit)
 }
