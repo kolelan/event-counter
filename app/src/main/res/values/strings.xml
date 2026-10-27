@@ -2,7 +2,9 @@
 <resources>
     <string name="app_name">Счётчик событий</string>
     <string name="widget_one">1 событие</string>
+    <string name="widget_cell">1 клетка</string>
     <string name="widget_three">3 события</string>
     <string name="widget_five">5 событий</string>
     <string name="widget_description">Иконка, название и счётчик выбранных событий</string>
+    <string name="widget_cell_description">Одна клетка: иконка, подпись и дни</string>
 </resources>

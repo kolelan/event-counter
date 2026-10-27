@@ -19,6 +19,7 @@ fun buildWidgetSlots(
     events: List<Event>,
     now: Instant,
     zone: ZoneId,
+    counterUnit: CounterUnit? = null,
 ): List<WidgetSlot> {
     val byId = events.associateBy { it.id }
     return eventIds.map { id ->
@@ -26,7 +27,8 @@ fun buildWidgetSlots(
         if (event == null || event.archivedAt != null) {
             emptyWidgetSlot()
         } else {
-            val counter = StatusCalculator.counter(event, now, zone)
+            val shown = if (counterUnit == null) event else event.copy(counterUnit = counterUnit)
+            val counter = StatusCalculator.counter(shown, now, zone)
             WidgetSlot(
                 eventId = event.id,
                 title = event.title,

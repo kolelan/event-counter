@@ -45,6 +45,25 @@ class WidgetSlotsTest {
     }
 
     @Test
+    fun cellCounter_showsDaysEvenWhenEventUsesHours() {
+        val event = event(
+            id = 8,
+            title = "Масло",
+            yellow = Threshold(5, ThresholdUnit.DAYS),
+            red = Threshold(20, ThresholdUnit.DAYS),
+        ).copy(counterUnit = CounterUnit.HOURS)
+        val slot = buildWidgetSlots(
+            eventIds = listOf(8L),
+            events = listOf(event),
+            now = Instant.parse("2026-01-11T00:00:00Z"),
+            zone = zone,
+            counterUnit = CounterUnit.DAYS,
+        ).single()
+        assertEquals("10 дн.", slot.counterText)
+        assertEquals(EventStatus.YELLOW, slot.status)
+    }
+
+    @Test
     fun archivedMissingAndEmpty_askToChoose() {
         val archived = event(id = 3, title = "Масло", archivedAt = Instant.parse("2026-02-01T00:00:00Z"))
         val slots = buildWidgetSlots(

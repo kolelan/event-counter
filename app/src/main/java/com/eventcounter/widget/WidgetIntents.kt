@@ -37,3 +37,14 @@ fun slotCountOf(providerClassName: String?): Int = when {
     providerClassName?.endsWith("FiveEventWidgetReceiver") == true -> 5
     else -> 1
 }
+
+fun isOneCell(providerClassName: String?): Boolean {
+    return providerClassName?.endsWith("OneCellWidgetReceiver") == true
+}
+
+fun configureTitle(providerClassName: String?, slotCount: Int): String = when {
+    isOneCell(providerClassName) -> "1 клетка"
+    slotCount == 3 -> "3 события"
+    slotCount == 5 -> "5 событий"
+    else -> "1 событие"
+}

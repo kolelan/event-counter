@@ -1,5 +1,6 @@
 package com.eventcounter.widget
 
+import android.appwidget.AppWidgetManager
 import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
@@ -36,6 +37,7 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import androidx.glance.action.clickable
 import com.eventcounter.EventCounterApp
+import com.eventcounter.domain.CounterUnit
 import com.eventcounter.domain.EventStatus
 import com.eventcounter.domain.WidgetSlot
 import com.eventcounter.domain.buildWidgetSlots
@@ -46,6 +48,8 @@ import java.time.ZoneId
 class EventGlanceWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val widgetId = GlanceAppWidgetManager(context).getAppWidgetId(id)
+        val provider = AppWidgetManager.getInstance(context).getAppWidgetInfo(widgetId)?.provider?.className
+        val cell = isOneCell(provider)
         val selection = WidgetStore(context).read(widgetId)
         val container = (context.applicationContext as EventCounterApp).container
         val events = container.repository.getEvents(selection.eventIds.filterNotNull())
@@ -54,21 +58,26 @@ class EventGlanceWidget : GlanceAppWidget() {
             events = events,
             now = Instant.now(),
             zone = ZoneId.systemDefault(),
+            counterUnit = if (cell) CounterUnit.DAYS else null,
         )
         provideContent {
             GlanceTheme {
-                Column(
-                    modifier = GlanceModifier
-                        .fillMaxSize()
-                        .background(GlanceTheme.colors.widgetBackground)
-                        .cornerRadius(16.dp)
-                        .padding(8.dp),
-                ) {
-                    slots.forEachIndexed { index, slot ->
-                        if (index > 0) {
-                            Spacer(GlanceModifier.height(6.dp))
+                if (cell) {
+                    OneCell(context = context, widgetId = widgetId, slot = slots.first())
+                } else {
+                    Column(
+                        modifier = GlanceModifier
+                            .fillMaxSize()
+                            .background(GlanceTheme.colors.widgetBackground)
+                            .cornerRadius(16.dp)
+                            .padding(8.dp),
+                    ) {
+                        slots.forEachIndexed { index, slot ->
+                            if (index > 0) {
+                                Spacer(GlanceModifier.height(6.dp))
+                            }
+                            SlotRow(context = context, widgetId = widgetId, slot = slot)
                         }
-                        SlotRow(context = context, widgetId = widgetId, slot = slot)
                     }
                 }
             }
@@ -80,11 +89,7 @@ class EventGlanceWidget : GlanceAppWidget() {
 private fun SlotRow(context: Context, widgetId: Int, slot: WidgetSlot) {
     val color = slotColor(slot.status)
     val icon = remember(slot.iconKey) { AppIcons.byKey(slot.iconKey).image.raster() }
-    val action = if (slot.opensEvent && slot.eventId != null) {
-        actionStartActivity(WidgetIntents.openEvent(context, slot.eventId))
-    } else {
-        actionStartActivity(WidgetIntents.configure(context, widgetId))
-    }
+    val action = slotAction(context, widgetId, slot)
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
@@ -132,6 +137,57 @@ private fun SlotRow(context: Context, widgetId: Int, slot: WidgetSlot) {
     }
 }
 
+@androidx.compose.runtime.Composable
+private fun OneCell(context: Context, widgetId: Int, slot: WidgetSlot) {
+    val color = slotColor(slot.status)
+    val icon = remember(slot.iconKey) { AppIcons.byKey(slot.iconKey).image.raster() }
+    val title = if (slot.opensEvent) slot.title else "Выберите"
+    Column(
+        modifier = GlanceModifier
+            .fillMaxSize()
+            .background(cellBackground(slot.status))
+            .cornerRadius(16.dp)
+            .clickable(slotAction(context, widgetId, slot))
+            .padding(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Image(
+            provider = ImageProvider(icon),
+            contentDescription = AppIcons.byKey(slot.iconKey).label,
+            modifier = GlanceModifier.size(18.dp),
+            colorFilter = ColorFilter.tint(color),
+        )
+        Text(
+            text = title,
+            maxLines = 1,
+            style = TextStyle(
+                color = GlanceTheme.colors.onSurface,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+            ),
+        )
+        if (slot.counterText.isNotBlank()) {
+            Text(
+                text = slot.counterText,
+                maxLines = 1,
+                style = TextStyle(
+                    color = color,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                ),
+            )
+        }
+    }
+}
+
+private fun slotAction(context: Context, widgetId: Int, slot: WidgetSlot) =
+    if (slot.opensEvent && slot.eventId != null) {
+        actionStartActivity(WidgetIntents.openEvent(context, slot.eventId))
+    } else {
+        actionStartActivity(WidgetIntents.configure(context, widgetId))
+    }
+
 private fun slotColor(status: EventStatus): ColorProvider = when (status) {
     EventStatus.YELLOW -> dayNightColor(day = Color(0xFF8A5A00), night = Color(0xFFFFD56A))
     EventStatus.RED -> dayNightColor(day = Color(0xFFBA1A1A), night = Color(0xFFFFB4AB))
@@ -139,7 +195,23 @@ private fun slotColor(status: EventStatus): ColorProvider = when (status) {
     EventStatus.NONE -> dayNightColor(day = Color(0xFF3E4944), night = Color(0xFFC0C9C3))
 }
 
+private fun cellBackground(status: EventStatus): ColorProvider = when (status) {
+    EventStatus.YELLOW -> dayNightColor(day = Color(0xFFFFF1CC), night = Color(0xFF3F3416))
+    EventStatus.RED -> dayNightColor(day = Color(0xFFFDE8E6), night = Color(0xFF3F1D1D))
+    EventStatus.NORMAL -> dayNightColor(day = Color(0xFFFBFCFB), night = Color(0xFF171A19))
+    EventStatus.NONE -> dayNightColor(day = Color(0xFFFBFCFB), night = Color(0xFF171A19))
+}
+
 class OneEventWidgetReceiver : GlanceAppWidgetReceiver() {
+    override val glanceAppWidget: GlanceAppWidget = EventGlanceWidget()
+
+    override fun onDeleted(context: Context, appWidgetIds: IntArray) {
+        deleteSlots(context, appWidgetIds)
+        super.onDeleted(context, appWidgetIds)
+    }
+}
+
+class OneCellWidgetReceiver : GlanceAppWidgetReceiver() {
     override val glanceAppWidget: GlanceAppWidget = EventGlanceWidget()
 
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {

@@ -40,6 +40,17 @@
                 android:resource="@xml/widget_one" />
         </receiver>
         <receiver
+            android:name=".widget.OneCellWidgetReceiver"
+            android:exported="true"
+            android:label="@string/widget_cell">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_cell" />
+        </receiver>
+        <receiver
             android:name=".widget.ThreeEventWidgetReceiver"
             android:exported="true"
             android:label="@string/widget_three">

@@ -46,6 +46,7 @@ import com.eventcounter.domain.uniqueSlotIds
 import com.eventcounter.ui.theme.EventCounterTheme
 import com.eventcounter.widget.WidgetRefresher
 import com.eventcounter.widget.WidgetStore
+import com.eventcounter.widget.configureTitle
 import com.eventcounter.widget.slotCountOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -66,6 +67,7 @@ class WidgetConfigureActivity : ComponentActivity() {
         }
         val provider = AppWidgetManager.getInstance(this).getAppWidgetInfo(widgetId)?.provider?.className
         val slotCount = slotCountOf(provider)
+        val title = configureTitle(provider, slotCount)
         val container = (application as EventCounterApp).container
         enableEdgeToEdge()
         setContent {
@@ -74,6 +76,7 @@ class WidgetConfigureActivity : ComponentActivity() {
                     WidgetConfigureScreen(
                         widgetId = widgetId,
                         slotCount = slotCount,
+                        title = title,
                         onDone = {
                             setResult(RESULT_OK, result)
                             finish()
@@ -161,6 +164,7 @@ private class WidgetConfigureViewModel(
 private fun WidgetConfigureScreen(
     widgetId: Int,
     slotCount: Int,
+    title: String,
     onDone: () -> Unit,
 ) {
     val container = LocalAppContainer.current
@@ -168,12 +172,6 @@ private fun WidgetConfigureScreen(
         factory = WidgetConfigureViewModel.factory(container, widgetId, slotCount),
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
-    val title = when (slotCount) {
-        1 -> "1 событие"
-        3 -> "3 события"
-        5 -> "5 событий"
-        else -> "$slotCount"
-    }
 
     Scaffold(
         topBar = {
