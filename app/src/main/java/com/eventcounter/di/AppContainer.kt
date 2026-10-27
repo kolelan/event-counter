@@ -5,6 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.CreationExtras
 import com.eventcounter.data.EventRepository
+import com.eventcounter.data.iconify.FileIconifyCache
+import com.eventcounter.data.iconify.HttpIconifyTransport
+import com.eventcounter.data.iconify.IconifyRepository
 import com.eventcounter.data.local.EventDatabase
 import com.eventcounter.data.local.ImageStore
 import com.eventcounter.data.prefs.SettingsRepository
@@ -22,6 +25,10 @@ class AppContainer(context: Context) {
     val settingsRepository: SettingsRepository = SettingsRepository(appContext)
     val widgetStore: WidgetStore = WidgetStore(appContext)
     val widgetRefresher: WidgetRefresher = GlanceWidgetRefresher(appContext)
+    val iconify: IconifyRepository = IconifyRepository(
+        transport = HttpIconifyTransport(),
+        cache = FileIconifyCache(appContext),
+    )
 }
 
 fun <VM : ViewModel> viewModelFactory(create: () -> VM): ViewModelProvider.Factory {
