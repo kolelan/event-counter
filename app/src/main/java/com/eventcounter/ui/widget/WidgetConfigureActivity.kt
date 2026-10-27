@@ -44,9 +44,11 @@ import com.eventcounter.domain.WIDGET_EMPTY_TITLE
 import com.eventcounter.domain.eventsForSlot
 import com.eventcounter.domain.uniqueSlotIds
 import com.eventcounter.ui.theme.EventCounterTheme
+import com.eventcounter.widget.DigitStyle
 import com.eventcounter.widget.WidgetRefresher
 import com.eventcounter.widget.WidgetStore
 import com.eventcounter.widget.configureTitle
+import com.eventcounter.widget.isOneCell
 import com.eventcounter.widget.slotCountOf
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -68,6 +70,7 @@ class WidgetConfigureActivity : ComponentActivity() {
         val provider = AppWidgetManager.getInstance(this).getAppWidgetInfo(widgetId)?.provider?.className
         val slotCount = slotCountOf(provider)
         val title = configureTitle(provider, slotCount)
+        val cell = isOneCell(provider)
         val container = (application as EventCounterApp).container
         enableEdgeToEdge()
         setContent {
@@ -77,6 +80,7 @@ class WidgetConfigureActivity : ComponentActivity() {
                         widgetId = widgetId,
                         slotCount = slotCount,
                         title = title,
+                        cell = cell,
                         onDone = {
                             setResult(RESULT_OK, result)
                             finish()
@@ -92,6 +96,7 @@ private data class ConfigureState(
     val loading: Boolean = true,
     val events: List<Event> = emptyList(),
     val selected: List<Long?> = emptyList(),
+    val digitStyle: DigitStyle = DigitStyle.SHADOW,
     val pickingSlot: Int? = null,
 )
 
@@ -113,7 +118,14 @@ private class WidgetConfigureViewModel(
             val selected = List(_state.value.selected.size) { index ->
                 stored.getOrNull(index)?.takeIf { it in activeIds }
             }
-            _state.update { it.copy(loading = false, events = events, selected = selected) }
+            _state.update {
+                it.copy(
+                    loading = false,
+                    events = events,
+                    selected = selected,
+                    digitStyle = store.readDigitStyle(widgetId),
+                )
+            }
         }
     }
 
@@ -133,9 +145,14 @@ private class WidgetConfigureViewModel(
         }
     }
 
+    fun setDigitStyle(style: DigitStyle) {
+        _state.update { it.copy(digitStyle = style) }
+    }
+
     fun save(onDone: () -> Unit) {
         val snapshot = _state.value
         store.write(widgetId, snapshot.selected.size, uniqueSlotIds(snapshot.selected))
+        store.writeDigitStyle(widgetId, snapshot.digitStyle)
         viewModelScope.launch {
             runCatching { refresher.refresh() }
             onDone()
@@ -165,6 +182,7 @@ private fun WidgetConfigureScreen(
     widgetId: Int,
     slotCount: Int,
     title: String,
+    cell: Boolean,
     onDone: () -> Unit,
 ) {
     val container = LocalAppContainer.current
@@ -204,7 +222,11 @@ private fun WidgetConfigureScreen(
             ) {
                 item {
                     Text(
-                        text = "Для каждого места выберите активное событие. Пустое место потом можно заполнить с виджета.",
+                        text = if (cell) {
+                            "Выберите одно событие. Иконка заполнит клетку, число дней будет по центру."
+                        } else {
+                            "Для каждого места выберите активное событие. Пустое место потом можно заполнить с виджета."
+                        },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -221,6 +243,25 @@ private fun WidgetConfigureScreen(
                             modifier = Modifier.fillMaxWidth(),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+                if (cell) {
+                    item {
+                        Text("Цифры на иконке", style = MaterialTheme.typography.titleSmall)
+                    }
+                    item {
+                        ChoiceRow(
+                            title = "Тень",
+                            selected = state.digitStyle == DigitStyle.SHADOW,
+                            onClick = { viewModel.setDigitStyle(DigitStyle.SHADOW) },
+                        )
+                    }
+                    item {
+                        ChoiceRow(
+                            title = "Полупрозрачная подложка",
+                            selected = state.digitStyle == DigitStyle.PLATE,
+                            onClick = { viewModel.setDigitStyle(DigitStyle.PLATE) },
                         )
                     }
                 }

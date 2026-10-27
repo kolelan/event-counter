@@ -61,6 +61,18 @@ fun uniqueSlotIds(eventIds: List<Long?>): List<Long?> {
     }
 }
 
+fun cellCounterLabel(counterText: String): String {
+    val number = counterText.substringBefore(' ').trim()
+    return number.ifBlank { counterText }
+}
+
+fun cellCounterTextSizeRatio(label: String): Float = when (label.length) {
+    0, 1, 2 -> 0.58f
+    3 -> 0.44f
+    4 -> 0.34f
+    else -> 0.26f
+}
+
 private fun emptyWidgetSlot() = WidgetSlot(
     eventId = null,
     title = WIDGET_EMPTY_TITLE,

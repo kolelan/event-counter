@@ -64,6 +64,14 @@ class WidgetSlotsTest {
     }
 
     @Test
+    fun cellLabel_keepsNumberAndShrinksLongValues() {
+        assertEquals("355", cellCounterLabel("355 дн."))
+        assertEquals("−12", cellCounterLabel("−12 дн."))
+        assertTrue(cellCounterTextSizeRatio("355") < cellCounterTextSizeRatio("9"))
+        assertTrue(cellCounterTextSizeRatio("−355") < cellCounterTextSizeRatio("355"))
+    }
+
+    @Test
     fun archivedMissingAndEmpty_askToChoose() {
         val archived = event(id = 3, title = "Масло", archivedAt = Instant.parse("2026-02-01T00:00:00Z"))
         val slots = buildWidgetSlots(

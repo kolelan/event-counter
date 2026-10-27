@@ -25,6 +25,7 @@ import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
 import androidx.glance.layout.Spacer
+import androidx.glance.layout.ContentScale
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
@@ -41,6 +42,7 @@ import com.eventcounter.domain.CounterUnit
 import com.eventcounter.domain.EventStatus
 import com.eventcounter.domain.WidgetSlot
 import com.eventcounter.domain.buildWidgetSlots
+import com.eventcounter.domain.cellCounterLabel
 import com.eventcounter.ui.icons.AppIcons
 import java.time.Instant
 import java.time.ZoneId
@@ -51,6 +53,7 @@ class EventGlanceWidget : GlanceAppWidget() {
         val provider = AppWidgetManager.getInstance(context).getAppWidgetInfo(widgetId)?.provider?.className
         val cell = isOneCell(provider)
         val selection = WidgetStore(context).read(widgetId)
+        val digitStyle = WidgetStore(context).readDigitStyle(widgetId)
         val container = (context.applicationContext as EventCounterApp).container
         val events = container.repository.getEvents(selection.eventIds.filterNotNull())
         val slots = buildWidgetSlots(
@@ -63,7 +66,12 @@ class EventGlanceWidget : GlanceAppWidget() {
         provideContent {
             GlanceTheme {
                 if (cell) {
-                    OneCell(context = context, widgetId = widgetId, slot = slots.first())
+                    OneCell(
+                        context = context,
+                        widgetId = widgetId,
+                        slot = slots.first(),
+                        digitStyle = digitStyle,
+                    )
                 } else {
                     Column(
                         modifier = GlanceModifier
@@ -138,43 +146,47 @@ private fun SlotRow(context: Context, widgetId: Int, slot: WidgetSlot) {
 }
 
 @androidx.compose.runtime.Composable
-private fun OneCell(context: Context, widgetId: Int, slot: WidgetSlot) {
+private fun OneCell(context: Context, widgetId: Int, slot: WidgetSlot, digitStyle: DigitStyle) {
     val color = slotColor(slot.status)
-    val icon = remember(slot.iconKey) { AppIcons.byKey(slot.iconKey).image.raster() }
-    val title = if (slot.opensEvent) slot.title else "Выберите"
-    Column(
+    val icon = remember(slot.iconKey) { AppIcons.byKey(slot.iconKey).image.raster(sizePx = 288) }
+    val label = cellCounterLabel(slot.counterText)
+    val number = remember(label, slot.status, digitStyle) {
+        if (slot.opensEvent && label.isNotBlank()) {
+            cellCounterBitmap(label, slot.status, digitStyle)
+        } else {
+            null
+        }
+    }
+    Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(cellBackground(slot.status))
             .cornerRadius(16.dp)
-            .clickable(slotAction(context, widgetId, slot))
-            .padding(4.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalAlignment = Alignment.CenterVertically,
+            .clickable(slotAction(context, widgetId, slot)),
+        contentAlignment = Alignment.Center,
     ) {
         Image(
             provider = ImageProvider(icon),
             contentDescription = AppIcons.byKey(slot.iconKey).label,
-            modifier = GlanceModifier.size(18.dp),
+            modifier = GlanceModifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
             colorFilter = ColorFilter.tint(color),
         )
-        Text(
-            text = title,
-            maxLines = 1,
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurface,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Medium,
-            ),
-        )
-        if (slot.counterText.isNotBlank()) {
+        if (number != null) {
+            Image(
+                provider = ImageProvider(number),
+                contentDescription = label,
+                modifier = GlanceModifier.fillMaxSize(),
+                contentScale = ContentScale.Fit,
+            )
+        } else {
             Text(
-                text = slot.counterText,
+                text = "Выберите",
                 maxLines = 1,
                 style = TextStyle(
-                    color = color,
+                    color = GlanceTheme.colors.onSurface,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Medium,
                 ),
             )
         }

@@ -2,6 +2,11 @@ package com.eventcounter.widget
 
 import android.content.Context
 
+enum class DigitStyle {
+    SHADOW,
+    PLATE,
+}
+
 data class WidgetSelection(
     val slotCount: Int,
     val eventIds: List<Long?>,
@@ -28,10 +33,22 @@ class WidgetStore(context: Context) {
             .apply()
     }
 
+    fun readDigitStyle(widgetId: Int): DigitStyle {
+        return when (prefs.getString(styleKey(widgetId), null)) {
+            DigitStyle.PLATE.name -> DigitStyle.PLATE
+            else -> DigitStyle.SHADOW
+        }
+    }
+
+    fun writeDigitStyle(widgetId: Int, style: DigitStyle) {
+        prefs.edit().putString(styleKey(widgetId), style.name).apply()
+    }
+
     fun delete(widgetId: Int) {
         prefs.edit()
             .remove(countKey(widgetId))
             .remove(slotsKey(widgetId))
+            .remove(styleKey(widgetId))
             .apply()
     }
 
@@ -43,6 +60,8 @@ class WidgetStore(context: Context) {
     private fun countKey(widgetId: Int) = "count_$widgetId"
 
     private fun slotsKey(widgetId: Int) = "slots_$widgetId"
+
+    private fun styleKey(widgetId: Int) = "style_$widgetId"
 
     private companion object {
         const val FILE = "widget-slots"
